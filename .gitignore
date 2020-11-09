@@ -1,5 +1,6 @@
 *.txt
 *.exe
-client
-server
 *.out
+*.png
+client/client
+server/server

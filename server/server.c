@@ -1,32 +1,37 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <netinet/in.h>
 #define SIZE 1024
-#define PORT 8000
+#define PORT 8080
 
-void send_file(FILE *fp, int sockfd){
+int send_file(FILE *fp, int sockfd){
   int n;
   char data[SIZE] = {0};
+  int val; char str[SIZE+1]={0}; 
 
-
-  while(fgets(data, SIZE, fp) != NULL) {
+  while((n=fread(data, sizeof(char), SIZE, fp)) != 0) {
   //  printf("%s\n",data);
 
-    if ((send(sockfd, data, sizeof(data),0)) == -1) {
+    if ((send(sockfd, data, n,0)) == -1) {
 
       perror("Error in sending file.");
-      exit(1);
+      return 0;
     }
+    val = recv(sockfd, str, SIZE+1, 0);
 
+
+  //  bzero(str, SIZE+1);
     bzero(data, SIZE);
   }
+  return 1;
 }
 
 int main(){
-  int e, opt=1;
+  int e, opt=1;long long fileSize;
   FILE *fp;
-  char filename[SIZE]={0};
+  char filename[SIZE]={0}; char str[SIZE]={0};int val;
 
   int sockfd, new_sock, valread;
   struct sockaddr_in server_addr, new_addr;
@@ -72,20 +77,35 @@ int main(){
     perror("accept");
     exit(EXIT_FAILURE);
   }
-
-  valread = read(new_sock , filename, 1024);  // read infromation received into the buffer
-  printf("%s\n",filename);
+  while(1){
+  valread = recv(new_sock , filename, 1024, 0);  // read infromation received into the buffer
+  if(!strcmp(filename,""))
+    break;
+  printf("Requested file: %s\n",filename);
 //  filename=buffer;
 
   fp = fopen(filename, "r");
   if (fp == NULL) {
-    perror("Error in opening file.");
-    send(new_sock, strerror(errno), strlen(strerror(errno)), 0);
-    exit(1);
+    perror("Error in opening file");
+    send(new_sock,"-1",2,0);
+    bzero(filename, SIZE);
+  //  send(new_sock, strerror(errno), strlen(strerror(errno)), 0);
+    continue;
   }
+  fseek(fp, 0L, SEEK_END);
+    fileSize = ftell(fp);
+    fseek(fp,0, SEEK_SET);
+    char sizeString[100];
+    sprintf(sizeString, "%lld", fileSize);
+    send(new_sock, sizeString, strlen(sizeString), 0);
+    val = recv(new_sock, str, SIZE, 0);
 //  send(new_sock , "hello" , strlen("hello") , 0 );
-  send_file(fp, new_sock);
-//  printf("File data sent successfully.\n");
-
+  if(send_file(fp, new_sock))
+    printf("File data sent successfully.\n");
+  else
+    printf("Some error occurred\n");
+  bzero(filename, SIZE);
+  }
+  printf("Closing connection\n");
   return 0;
 }
