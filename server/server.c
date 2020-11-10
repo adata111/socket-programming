@@ -6,6 +6,31 @@
 #define SIZE 1024
 #define PORT 8080
 
+void red () {
+  printf("\033[0;31m");
+}
+
+void rederr () {
+  fprintf(stderr, "\033[0;31m");
+}
+
+void green () {
+  printf("\033[0;32m");
+}
+
+void yellow() {
+  printf("\033[1;33m");
+}
+
+void reset () {
+  printf("\033[0m");
+}
+
+void reseterr () {
+  fprintf(stderr,"\033[0m");
+}
+
+
 int send_file(FILE *fp, int sockfd){
   int n;
   char data[SIZE] = {0};
@@ -15,8 +40,9 @@ int send_file(FILE *fp, int sockfd){
   //  printf("%s\n",data);
 
     if ((send(sockfd, data, n,0)) == -1) {
-
+      rederr();
       perror("Error in sending file.");
+      reseterr();
       return 0;
     }
     val = recv(sockfd, str, SIZE+1, 0);
@@ -50,6 +76,7 @@ int main(){
         perror("setsockopt");
         exit(EXIT_FAILURE);
     }
+  
   printf("Server socket created successfully.\n");
 
   server_addr.sin_family = AF_INET;  // Address family. For IPv6, it's AF_INET6. 29 others exist like AF_UNIX etc. 
@@ -63,6 +90,7 @@ int main(){
     exit(EXIT_FAILURE);
   }
   printf("Binding successful.\n");
+  
 
   if(listen(sockfd, 10) == 0){
     printf("Listening for client....\n");
@@ -77,16 +105,21 @@ int main(){
     perror("accept");
     exit(EXIT_FAILURE);
   }
+  yellow();
+  printf("Connected to client\n");
+  reset();
   while(1){
   valread = recv(new_sock , filename, 1024, 0);  // read infromation received into the buffer
   if(!strcmp(filename,""))
     break;
-  printf("Requested file: %s\n",filename);
+  printf("Requested file: \033[1;35m%s\033[0m\n",filename);
 //  filename=buffer;
 
-  fp = fopen(filename, "r");
+  fp = fopen(filename, "rb");
   if (fp == NULL) {
+    rederr();
     perror("Error in opening file");
+    reseterr();
     send(new_sock,"-1",2,0);
     bzero(filename, SIZE);
   //  send(new_sock, strerror(errno), strlen(strerror(errno)), 0);
@@ -100,12 +133,19 @@ int main(){
     send(new_sock, sizeString, strlen(sizeString), 0);
     val = recv(new_sock, str, SIZE, 0);
 //  send(new_sock , "hello" , strlen("hello") , 0 );
-  if(send_file(fp, new_sock))
+  if(send_file(fp, new_sock)){
+    green();
     printf("File data sent successfully.\n");
-  else
-    printf("Some error occurred\n");
+  }
+  else{
+    red();
+    printf("Some error occurred, could not send file.\n");
+  }
+  reset();
   bzero(filename, SIZE);
   }
-  printf("Closing connection\n");
+  yellow();
+  printf("Connection closed\n");
+  reset();
   return 0;
 }
