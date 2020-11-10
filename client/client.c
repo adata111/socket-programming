@@ -124,13 +124,14 @@ int main(){
           if(!strcmp(tokens[0],"get")){
             printf("%d file(s) to be downloaded\n", numCom-1);
             for(i=1;i<numCom;i++){
-            //  bzero(buffer,SIZE);
+              bzero(buffer,SIZE);
             //  printf("hi\n");
               send(sockfd , tokens[i] , strlen(tokens[i]) , 0 );  // send the message.
               printf("%s download request sent\n", tokens[i]);
               int valread = recv( sockfd , buffer, 1024, 0);  // receive message back from server, into the buffer
             //  printf("%s\n", buffer);
               if(!strcmp(buffer,"-1")){
+
                 printf("File not found.\n");
                 continue;
               }
