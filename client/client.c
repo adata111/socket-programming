@@ -23,6 +23,7 @@ void send_file(FILE *fp, int sockfd){
 
 int write_file(int sockfd, char *filename, long long fileSize){
   int n;long long written=0;
+  float perc;
   FILE *fp;
   char buffer[SIZE]={0};
   printf("writing %lld\n",fileSize);
@@ -37,6 +38,8 @@ int write_file(int sockfd, char *filename, long long fileSize){
       break;
     }
     written+=n;
+    perc = 100*((float)(written)/fileSize);
+    printf("\r%.2f%%", perc);
   //  printf("%s", buffer);
     fprintf(fp, "%s", buffer);
     bzero(buffer, SIZE);
@@ -136,10 +139,10 @@ int main(){
               fileSize = atoll(buffer);
 
               if((b=write_file(sockfd, tokens[i],fileSize))>=0){
-                printf("Data %lld bytes written in the file successfully.\n",b);
+                printf("\nData %lld bytes written in the file successfully.\n",b);
               }
               else{
-                printf("Error while downloading, please try again.\n\n");
+                printf("\nError while downloading, please try again.\n\n");
               }
             }
           }
