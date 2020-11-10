@@ -32,27 +32,34 @@ void reseterr () {
   fprintf(stderr,"\033[0m");
 }
 
-int write_file(int sockfd, char *filename, long long fileSize){
+int writeFile(int sockfd, char *filename, long long fileSize){
+// This function returns the number of bytes written and -1 if some error occurs
+
   int n;long long written=0;
   float perc;
   FILE *fp;
   char buffer[SIZE]={0};
-  //printf("writing %lld\n",fileSize);
+//  printf("writing %lld\n",fileSize);
 
-  fp = fopen(filename, "wb");
+  fp = fopen(filename, "wb");  // "wb" to write binary file, will be needed for non .txt files mostly
   while (1) {
     if(written>=fileSize) break;
     n = recv(sockfd, buffer, SIZE, 0);
   //  printf("%d\n", n);
-    send(sockfd, "go", 2, 0);
+    send(sockfd, "go", 2, 0);  // send acknowledgement that a chunk has been recieved
     if (n <= 0){
+      if(n<0) written = -1;
       break;
     }
-    written+=n;
+   // printf("%s", buffer);
+    if((fwrite(buffer, sizeof(char), n, fp))<0){    //write to the new file
+      written = -1;
+      break;
+    }
+    written = written + n;    // increase count of bytes written
     perc = 100*((float)(written)/fileSize);
     printf("\r%.2f%% downloaded", perc);
-   // printf("%s", buffer);
-    fwrite(buffer, sizeof(char), n, fp);
+
     bzero(buffer, SIZE);
 
   }
@@ -74,14 +81,15 @@ int main(){
 
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if(sockfd < 0) {
-    red();
+    rederr();
     perror("Error in socket");
-    reset();
+    reseterr();
     exit(1);
   }
   printf("Client socket created successfully.\n");
 
-  memset(&server_addr, '0', sizeof(server_addr)); 
+  memset(&server_addr, '0', sizeof(server_addr));  // to make sure the struct is empty. Essentially sets sin_zero as 0
+                                                // which is meant to be, and rest is defined below
 
   server_addr.sin_family = AF_INET;
   server_addr.sin_port = htons(PORT);
@@ -113,21 +121,23 @@ int main(){
   size_t inpSize = 0;
         char *input; char inp[1000];
         if(getline(&input,&inpSize,stdin)==-1){
-          red();
+          rederr();
           perror("input");
-          reset();
+          reseterr();
           break;
         }
     //    printf("%s\n", input);
-        char* token = strtok(input, " \n");    
+
+        char* token = strtok(input, " \n\t");    
 
         numCom = 0;  
+        //split input based on spaces, newlines and tabs
         while (token != NULL) { 
     //  command(token); 
     //  printf("%s\n",token );
           strcpy(tokens[numCom],token);
           ++numCom;
-          token = strtok(NULL, " \n"); 
+          token = strtok(NULL, " \n\t"); 
           
         } 
         if(numCom==1){
@@ -140,7 +150,7 @@ int main(){
           }
           else{
             red();
-            printf("command not found\n");
+            printf("Command not found\n");
           }
           reset();
         }
@@ -149,25 +159,25 @@ int main(){
             yellow();
             printf("%d file(s) to be downloaded\n", numCom-1);
             reset();
-            for(i=1;i<numCom;i++){
+            for(i=1;i<numCom;i++){//send download requests one file at a time to server
               bzero(buffer,SIZE);
             //  printf("hi\n");
-              send(sockfd , tokens[i] , strlen(tokens[i]) , 0 );  // send the message.
-              printf("\033[1;37m%s download request sent\033[0m\n", tokens[i]);
+              send(sockfd , tokens[i] , strlen(tokens[i]) , 0 );  // send the name of file to be downloaded
+              printf("\033[1;35m%s \033[1;37mdownload request sent\033[0m\n", tokens[i]);
               int valread = recv( sockfd , buffer, 1024, 0);  // receive message back from server, into the buffer
+                          // this message contains size of file to be downloaded and "-1" if the file doesn't exist
             //  printf("%s\n", buffer);
               if(!strcmp(buffer,"-1")){
-
                 printf("\033[0;31mFile not found.\n\033[0m");
                 continue;
               }
-              send(sockfd,"got",3,0);
+              send(sockfd,"got",3,0);   //send acknowledgement of the receipt of file size
               green();
               printf("File found, starting download\n");
               reset();
-              fileSize = atoll(buffer);
+              fileSize = atoll(buffer); // convert string file size to long long
 
-              if((b=write_file(sockfd, tokens[i],fileSize))>=0){
+              if((b=writeFile(sockfd, tokens[i],fileSize))>=0){
                 green();
                 printf("\nFile (%lld bytes) downloaded successfully.\n",b);
               }
@@ -182,7 +192,7 @@ int main(){
           }
           else{
             red();
-            printf("command not found\n");
+            printf("Command not found\n");
             reset();
           }
         }

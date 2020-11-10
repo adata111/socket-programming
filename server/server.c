@@ -31,22 +31,23 @@ void reseterr () {
 }
 
 
-int send_file(FILE *fp, int sockfd){
+int sendFile(FILE *fp, int sockfd){
+  // this function returns 0 if complete file did not get sent properly and 1 otherwise
   int n;
   char data[SIZE] = {0};
   int val; char str[SIZE+1]={0}; 
 
-  while((n=fread(data, sizeof(char), SIZE, fp)) != 0) {
+  while((n=fread(data, sizeof(char), SIZE, fp)) != 0) { //read max 1024 bytes of data from file
   //  printf("%s\n",data);
 
-    if ((send(sockfd, data, n,0)) == -1) {
+    if ((send(sockfd, data, n,0)) == -1) {  // send all the data that has been read to client
       rederr();
       perror("Error in sending file.");
       reseterr();
       return 0;
     }
-    val = recv(sockfd, str, SIZE+1, 0);
-
+    val = recv(sockfd, str, SIZE+1, 0); //receive acknowlegement of receipt of the chunk that was sent
+                                        //only after receiving acknowledgement the next chunk(if any) is sent
 
   //  bzero(str, SIZE+1);
     bzero(data, SIZE);
@@ -92,7 +93,7 @@ int main(){
   printf("Binding successful.\n");
   
 
-  if(listen(sockfd, 10) == 0){
+  if(listen(sockfd, 10) == 0){   // 10 is the maximum size of queue - connections you haven't accepted
     printf("Listening for client....\n");
   }
   else{
@@ -101,6 +102,7 @@ int main(){
   }
 
   addr_size = sizeof(new_addr);
+    // accept returns a new socket file descriptor to use for this single accepted connection.
   if((new_sock = accept(sockfd, (struct sockaddr*)&new_addr, &addr_size))<0){
     perror("accept");
     exit(EXIT_FAILURE);
@@ -120,20 +122,21 @@ int main(){
     rederr();
     perror("Error in opening file");
     reseterr();
-    send(new_sock,"-1",2,0);
+    send(new_sock,"-1",2,0);  // send negative fileSize to indicate the file is not available
+                  // no need to wait for acknowledgement in this case as the next operation after continue is recv anyways
     bzero(filename, SIZE);
   //  send(new_sock, strerror(errno), strlen(strerror(errno)), 0);
     continue;
   }
   fseek(fp, 0L, SEEK_END);
-    fileSize = ftell(fp);
-    fseek(fp,0, SEEK_SET);
+    fileSize = ftell(fp);   //get the file size
+    fseek(fp,0, SEEK_SET);  // set pointer to starting again
     char sizeString[100];
-    sprintf(sizeString, "%lld", fileSize);
-    send(new_sock, sizeString, strlen(sizeString), 0);
-    val = recv(new_sock, str, SIZE, 0);
+    sprintf(sizeString, "%lld", fileSize);    //convert file size to string
+    send(new_sock, sizeString, strlen(sizeString), 0);  //send string file size to client
+    val = recv(new_sock, str, SIZE, 0);  // wait to recieve acknowledgement of receipt of the file size
 //  send(new_sock , "hello" , strlen("hello") , 0 );
-  if(send_file(fp, new_sock)){
+  if(sendFile(fp, new_sock)){
     green();
     printf("File data sent successfully.\n");
   }
