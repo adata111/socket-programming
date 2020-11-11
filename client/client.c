@@ -25,7 +25,7 @@ void yellow() {
 }
 
 void reset () {
-  printf("\033[0m");
+  printf("\033[0m\n");
 }
 
 void reseterr () {
@@ -45,7 +45,7 @@ int writeFile(int sockfd, char *filename, long long fileSize){
   while (1) {
     if(written>=fileSize){ 
       if(fileSize==0)
-        printf("100%% downloaded");
+        printf("100.00%% downloaded");
       break;
     }
     n = recv(sockfd, buffer, SIZE, 0);
@@ -102,7 +102,7 @@ int main(){
     if(inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr)<=0)
     {
       red();
-        printf("\nInvalid address/ Address not supported \n");
+        printf("\nInvalid address/ Address not supported ");
       reset();
         return -1;
     }
@@ -115,7 +115,7 @@ int main(){
     return -1;
   }
   yellow();
- printf("Connected to Server.\n");
+ printf("Connected to Server.");
  reset();
 
  while(1){
@@ -150,47 +150,57 @@ int main(){
           }
           else if(!strcmp(tokens[0],"get")){
             red();
-            printf("Please provide name of file to be downloaded from server\n");
+            printf("Please provide name of file to be downloaded from server");
           }
           else{
             red();
-            printf("Command not found\n");
+            printf("Command not found");
           }
           reset();
         }
         else if(numCom>1){
           if(!strcmp(tokens[0],"get")){
             yellow();
-            printf("%d file(s) to be downloaded\n", numCom-1);
+            printf("%d file(s) to be downloaded", numCom-1);
             reset();
             for(i=1;i<numCom;i++){//send download requests one file at a time to server
               bzero(buffer,SIZE);
             //  printf("hi\n");
-              send(sockfd , tokens[i] , strlen(tokens[i]) , 0 );  // send the name of file to be downloaded
-              printf("\033[1;35m%s \033[1;37mdownload request sent\033[0m\n", tokens[i]);
-              int valread = recv( sockfd , buffer, 1024, 0);  // receive message back from server, into the buffer
+              send(sockfd , tokens[i] , strlen(tokens[i]) , 0 );
+               
+              int valread = recv( sockfd , buffer, 1024, 0); // receive message back from server, into the buffer
                           // this message contains size of file to be downloaded and "-1" if the file doesn't exist
-            //  printf("%s\n", buffer);
+                          //and "-2" if the file is not a regular file
+              
+               if(!valread){
+                red();
+                printf("Connection lost. Terminating...");  // send the name of file to be downloaded
+                reset();
+                return 0;
+              }
+
+              printf("\033[1;35m%s \033[1;37mdownload request sent\033[0m\n", tokens[i]);
+              //printf("%d\n", valread);
               if(!strcmp(buffer,"-1")){
                 printf("\033[0;31mFile not available.\n\033[0m");
                 continue;
               }
               else if(!strcmp(buffer,"-2")){
-                printf("\033[0;31mRequested file is not a regular file.\n\033[0m");
+                printf("\033[0;31mRequested file is not a regular file.\033[0m\n");
                 continue;
               }
               send(sockfd,"got",3,0);   //send acknowledgement of the receipt of file size
               green();
-              printf("File found, starting download\n");
+              printf("File found, starting download");
               reset();
               fileSize = atoll(buffer); // convert string file size to long long
 
               if((b=writeFile(sockfd, tokens[i],fileSize))>=0){
                 green();
-                printf("\nFile (%lld bytes) downloaded successfully.\n",b);
+                printf("\nFile (%lld bytes) downloaded successfully.",b);
               }
               else{
-                printf("\033[0;31m\nError while downloading, please try again.\n\033[0m");
+                printf("\033[0;31m\nError while downloading, please try again.");
               }
               reset();
             }
@@ -200,7 +210,7 @@ int main(){
           }
           else{
             red();
-            printf("Command not found\n");
+            printf("Command not found");
             reset();
           }
         }
@@ -211,7 +221,7 @@ int main(){
   
 
 yellow();
-  printf("Closing the connection.\n");
+  printf("Closing the connection.");
   reset();
   close(sockfd);
 

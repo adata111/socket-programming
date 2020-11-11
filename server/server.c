@@ -93,7 +93,7 @@ int main(){
   }
   printf("Binding successful.\n");
   
-
+while(1){
   if(listen(sockfd, 10) == 0){   // 10 is the maximum size of queue - connections you haven't accepted
     printf("Listening for client....\n");
   }
@@ -109,7 +109,7 @@ int main(){
     exit(EXIT_FAILURE);
   }
   yellow();
-  printf("Connected to client\n");
+  printf("Connected to client\033[0m\n");
   reset();
   while(1){
   valread = recv(new_sock , filename, 1024, 0);  // read infromation received into the buffer
@@ -133,7 +133,7 @@ int main(){
   stat(filename, &st);
   if(S_ISREG(st.st_mode) <= 0){
     red();
-    printf("File requested is not a regular file.\n");
+    printf("File requested is not a regular file.\033[0m\n");
     reset();
     send(new_sock, "-2", 2, 0);
     bzero(filename, SIZE);
@@ -149,17 +149,18 @@ int main(){
 //  send(new_sock , "hello" , strlen("hello") , 0 );
   if(sendFile(fp, new_sock)){
     green();
-    printf("File data sent successfully.\n");
+    printf("File data sent successfully.\033[0m\n");
   }
   else{
     red();
-    printf("Some error occurred, could not send file.\n");
+    printf("Some error occurred, could not send file.\033[0m\n");
   }
   reset();
   bzero(filename, SIZE);
   }
   yellow();
-  printf("Connection closed\n");
+  printf("Connection closed\033[0m\n");
   reset();
+}
   return 0;
 }
