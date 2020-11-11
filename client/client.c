@@ -43,7 +43,11 @@ int writeFile(int sockfd, char *filename, long long fileSize){
 
   fp = fopen(filename, "wb");  // "wb" to write binary file, will be needed for non .txt files mostly
   while (1) {
-    if(written>=fileSize) break;
+    if(written>=fileSize){ 
+      if(fileSize==0)
+        printf("100%% downloaded");
+      break;
+    }
     n = recv(sockfd, buffer, SIZE, 0);
   //  printf("%d\n", n);
     send(sockfd, "go", 2, 0);  // send acknowledgement that a chunk has been recieved
@@ -168,7 +172,11 @@ int main(){
                           // this message contains size of file to be downloaded and "-1" if the file doesn't exist
             //  printf("%s\n", buffer);
               if(!strcmp(buffer,"-1")){
-                printf("\033[0;31mFile not found.\n\033[0m");
+                printf("\033[0;31mFile not available.\n\033[0m");
+                continue;
+              }
+              else if(!strcmp(buffer,"-2")){
+                printf("\033[0;31mRequested file is not a regular file.\n\033[0m");
                 continue;
               }
               send(sockfd,"got",3,0);   //send acknowledgement of the receipt of file size

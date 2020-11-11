@@ -11,7 +11,9 @@ On the client terminal, the following commands are supported:
 	- If the file with the name specified exists in the server directory, it will be downloaded in the client directory. If the file doesn't exist error message will be shown.
 	- Multiple files as arguments are also handled. eg: `get file1.txt file2.txt file3.txt`.
 	- While a file is being downloaded, download percentage is shown.
-	- Pictures can also be copied using this command.
+	- Pictures can also be downloaded using this command.
 
 2. `exit`
 	This closes the connection with server and both client and server programs are terminated.
+
+*Note:* Only regular files can be downloaded. Directories can't be downloaded. 

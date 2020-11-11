@@ -3,6 +3,7 @@
 #include <string.h>
 #include <errno.h>
 #include <netinet/in.h>
+#include <sys/stat.h>
 #define SIZE 1024
 #define PORT 8080
 
@@ -126,6 +127,16 @@ int main(){
                   // no need to wait for acknowledgement in this case as the next operation after continue is recv anyways
     bzero(filename, SIZE);
   //  send(new_sock, strerror(errno), strlen(strerror(errno)), 0);
+    continue;
+  }
+  struct stat st;
+  stat(filename, &st);
+  if(S_ISREG(st.st_mode) <= 0){
+    red();
+    printf("File requested is not a regular file.\n");
+    reset();
+    send(new_sock, "-2", 2, 0);
+    bzero(filename, SIZE);
     continue;
   }
   fseek(fp, 0L, SEEK_END);
