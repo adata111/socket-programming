@@ -195,7 +195,7 @@ int main(){
               reset();
               fileSize = atoll(buffer); // convert string file size to long long
 
-              if((b=writeFile(sockfd, tokens[i],fileSize))>=0){
+              if((b=writeFile(sockfd, tokens[i],fileSize))==fileSize){
                 green();
                 printf("\nFile (%lld bytes) downloaded successfully.",b);
               }

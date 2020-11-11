@@ -94,7 +94,7 @@ int main(){
   printf("Binding successful.\n");
   
 while(1){
-  if(listen(sockfd, 10) == 0){   // 10 is the maximum size of queue - connections you haven't accepted
+  if(listen(sockfd, 3) == 0){   // 3 is the maximum size of queue - connections you haven't accepted
     printf("Listening for client....\n");
   }
   else{
@@ -123,8 +123,8 @@ while(1){
     rederr();
     perror("Error in opening file");
     reseterr();
-    send(new_sock,"-1",2,0);  // send negative fileSize to indicate the file is not available
-                  // no need to wait for acknowledgement in this case as the next operation after continue is recv anyways
+    send(new_sock,"-1",2,0);  // send "-1" fileSize to indicate the file is not available
+                  // no need to wait for acknowledgement in this case as the next operation after continue is recv 
     bzero(filename, SIZE);
   //  send(new_sock, strerror(errno), strlen(strerror(errno)), 0);
     continue;
@@ -135,7 +135,7 @@ while(1){
     red();
     printf("File requested is not a regular file.\033[0m\n");
     reset();
-    send(new_sock, "-2", 2, 0);
+    send(new_sock, "-2", 2, 0);  // send "-2" indicating file might be a directory or socket file or char device etc
     bzero(filename, SIZE);
     continue;
   }
